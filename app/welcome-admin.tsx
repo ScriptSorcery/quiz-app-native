@@ -1,10 +1,30 @@
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { useState } from 'react';
+import { apiClient } from '@/config/api';
 
 export default function WelcomeAdminScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [apiResponse, setApiResponse] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  const testApiConnection = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.get('/');
+      const data = response.data;
+      setApiResponse(JSON.stringify(data, null, 2));
+      Alert.alert('API Test Success', `Response: ${JSON.stringify(data)}`);
+    } catch (error: any) {
+      console.error('API Test Error:', error);
+      Alert.alert('API Test Failed', error.message || 'Could not connect to backend');
+      setApiResponse(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -79,6 +99,25 @@ export default function WelcomeAdminScreen() {
               <Text style={styles.activityDescription}>Start creating quizzes to see activity here</Text>
             </View>
           </View>
+        </View>
+
+        <View style={styles.testSection}>
+          <Text style={styles.testTitle}>🔌 API Connection Test</Text>
+          <TouchableOpacity 
+            style={styles.testButton} 
+            onPress={testApiConnection}
+            disabled={loading}
+          >
+            <Text style={styles.testButtonText}>
+              {loading ? 'Testing...' : '🧪 Test Backend API'}
+            </Text>
+          </TouchableOpacity>
+          {apiResponse ? (
+            <View style={styles.responseContainer}>
+              <Text style={styles.responseLabel}>Response:</Text>
+              <Text style={styles.responseText}>{apiResponse}</Text>
+            </View>
+          ) : null}
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -260,5 +299,47 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  testSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  testTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  testButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  responseContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+  },
+  responseLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  responseText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: 'monospace',
   },
 });

@@ -1,12 +1,32 @@
 import { Image } from 'expo-image';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View, TouchableOpacity, Alert } from 'react-native';
+import { useState } from 'react';
 
 import { HelloWave } from '@/components/hello-wave';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
+import { apiClient } from '@/config/api';
 
 export default function HomeScreen() {
+  const [apiResponse, setApiResponse] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  const testApiConnection = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.get('/');
+      const data = response.data;
+      setApiResponse(JSON.stringify(data, null, 2));
+      Alert.alert('API Test Success', `Response: ${JSON.stringify(data)}`);
+    } catch (error: any) {
+      console.error('API Test Error:', error);
+      Alert.alert('API Test Failed', error.message || 'Could not connect to backend');
+      setApiResponse(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -19,6 +39,27 @@ export default function HomeScreen() {
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
       </ThemedView>
+      
+      {/* API Test Section */}
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">🔌 API Connection Test</ThemedText>
+        <TouchableOpacity 
+          style={styles.testButton} 
+          onPress={testApiConnection}
+          disabled={loading}
+        >
+          <ThemedText style={styles.buttonText}>
+            {loading ? 'Testing...' : 'Test Backend API'}
+          </ThemedText>
+        </TouchableOpacity>
+        {apiResponse ? (
+          <View style={styles.responseContainer}>
+            <ThemedText type="defaultSemiBold">Response:</ThemedText>
+            <ThemedText style={styles.responseText}>{apiResponse}</ThemedText>
+          </View>
+        ) : null}
+      </ThemedView>
+
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
@@ -101,5 +142,26 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+  },
+  testButton: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  responseContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 8,
+  },
+  responseText: {
+    marginTop: 4,
+    fontFamily: 'monospace',
   },
 });
